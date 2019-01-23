@@ -3,6 +3,7 @@
 
 # include <QMainWindow>
 # include <QMenuBar>
+# include <QPlainTextEdit>
 # include <memory>
 
 namespace CSVCleaner
@@ -13,11 +14,13 @@ namespace CSVCleaner
 
     public:
         MainWindow() noexcept;
-        ~MainWindow() noexcept = default;
+        ~MainWindow() noexcept override = default;
 
     private:
+        void resizeEvent(QResizeEvent *event) noexcept override;
         QMenu *_fileMenu, *_helpMenu;
         std::unique_ptr<QAction> _openAction, _quitAction, _aboutQtAction;
+        QPlainTextEdit _csvText;
 
     private slots:
         void OpenFile();
