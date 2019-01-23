@@ -37,10 +37,14 @@ namespace CSVCleaner
 
     void MainWindow::OpenFile()
     {
-        QFile file(QFileDialog::getOpenFileName(this, tr("Open CSV"), ".", tr("CSV (*.csv);;Other (*)")));
-        file.open(QIODevice::ReadOnly);
-        _csvText.document()->setPlainText(QString(file.readAll()));
-        file.close();
+        QString path(QFileDialog::getOpenFileName(this, tr("Open CSV"), ".", tr("CSV (*.csv);;Other (*)")));
+        if (path != "")
+        {
+            QFile file(path);
+            file.open(QIODevice::ReadOnly);
+            _csvText.document()->setPlainText(QString(file.readAll()));
+            file.close();
+        }
     }
 
     void MainWindow::ExitApp() const noexcept
