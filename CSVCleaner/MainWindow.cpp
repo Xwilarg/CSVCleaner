@@ -123,7 +123,7 @@ namespace CSVCleaner
         }
         if (allLines.size() == 1)
             return;
-        _csvTable.setRowCount(allLines.size() - 1);
+        _csvTable.setRowCount(static_cast<int>(allLines.size() - 1));
         _csvTable.setColumnCount(header.size());
         _csvTable.setHorizontalHeaderLabels(header);
         for (size_t y = 1; y < allLines.size(); y++)
@@ -131,7 +131,7 @@ namespace CSVCleaner
             i = 0;
             while ((pos = allLines[y].find(separator)) != std::string::npos) {
                 token = allLines[y].substr(0, pos);
-                _csvTable.setItem(y, i, new QTableWidgetItem(QString::fromStdString(token)));
+                _csvTable.setItem(static_cast<int>(y), i, new QTableWidgetItem(QString::fromStdString(token)));
                 allLines[y].erase(0, pos + separator.size());
                 i++;
             }
