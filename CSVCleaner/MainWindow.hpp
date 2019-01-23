@@ -4,6 +4,9 @@
 # include <QMainWindow>
 # include <QMenuBar>
 # include <QPlainTextEdit>
+# include <QGroupBox>
+# include <QGridLayout>
+# include <QTableView>
 # include <memory>
 
 namespace CSVCleaner
@@ -17,10 +20,13 @@ namespace CSVCleaner
         ~MainWindow() noexcept override = default;
 
     private:
-        void resizeEvent(QResizeEvent *event) noexcept override;
         QMenu *_fileMenu, *_helpMenu;
+        QGroupBox _previewBox;
+        QTabWidget _previewTab;
+        QGridLayout _previewLayout;
         std::unique_ptr<QAction> _openAction, _quitAction, _aboutQtAction;
         QPlainTextEdit _csvText;
+        QTableView _csvTable;
 
     private slots:
         void OpenFile();
