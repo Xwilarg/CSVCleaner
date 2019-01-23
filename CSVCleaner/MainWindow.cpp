@@ -21,6 +21,7 @@ namespace CSVCleaner
 
         _csvText.move(10, 30);
         _csvText.resize(xSize - 20, ySize - 40);
+        _csvText.setLineWrapMode(QPlainTextEdit::LineWrapMode::NoWrap);
 
         connect(_openAction.get(), SIGNAL(triggered()), this, SLOT(OpenFile()));
         connect(_quitAction.get(), SIGNAL(triggered()), this, SLOT(ExitApp()));
