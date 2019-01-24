@@ -1,5 +1,6 @@
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QTextCodec>
 #include <QDebug>
 #include "MainWindow.hpp"
 
@@ -92,8 +93,11 @@ namespace CSVCleaner
         {
             _saveStr = path;
             QFile file(path);
+
             file.open(QIODevice::ReadOnly);
-            _csvText.document()->setPlainText(QString(file.readAll()));
+            QByteArray arr = file.readAll();
+            QTextCodec *codec = QTextCodec::codecForUtfText(arr, QTextCodec::codecForName("System"));
+            _csvText.document()->setPlainText(QString(codec->toUnicode(arr)));
             file.close();
             LoadDataInfo();
             ResetElements();
