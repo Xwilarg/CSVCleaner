@@ -10,11 +10,14 @@ namespace CSVCleaner
         : QMainWindow(nullptr), _mainWidget(this),
           _fileMenu(menuBar()->addMenu(tr("File"))), _helpMenu(menuBar()->addMenu(tr("?"))),
           _previewBox(tr("Preview"), &_mainWidget), _configBox(tr("Configuration"), &_mainWidget),
-          _modifBox(tr("Modification"), &_mainWidget),
+          _modifBox(tr("Modification"), &_mainWidget), _cleanBox(tr("Cleaning"), &_mainWidget),
           _defaultSeparatorBox(tr("Default separator"), &_configBox), _defaultNewLineBox(tr("Default newline"), &_previewBox),
+          _cleanOptionsBox(&_cleanBox),
           _previewTab(&_previewBox),
           _previewLayout(&_previewBox), _mainLayout(&_mainWidget), _modifLayout(&_modifBox),
+          _cleanLayout(&_cleanBox),
           _configLayout(&_configBox), _defaultSeparatorLayout(&_defaultSeparatorBox), _defaultNewLineLayout(&_defaultNewLineBox),
+          _cleanOptionsLayout(&_cleanOptionsBox),
           _defaultSeparatorEdit(&_defaultSeparatorBox), _defaultNewLineEdit(&_defaultNewLineBox),
           _openAction(std::make_unique<QAction>(tr("Open"), this)), _quitAction(std::make_unique<QAction>(tr("Quit"), this)),
           _aboutQtAction(std::make_unique<QAction>(tr("About Qt"), this)), _saveAction(std::make_unique<QAction>(tr("Save"), this)),
@@ -23,7 +26,10 @@ namespace CSVCleaner
           _columnSelection(&_modifBox), _selectedLineLabel(tr("Selected columns:\n"), &_modifBox),
           _availableLineList(), _selectedLineList(),
           _selectedAdd(tr("Add"), &_modifBox), _selectedReset(tr("Reset"), &_modifBox),
-          _selectedExport(tr("Export")),
+          _selectedExport(tr("Export")), _cleanStart(tr("Start"), &_cleanBox),
+          _showDupplicateCheck(tr("Show dupplicates"), &_cleanBox),
+          _ignoreCaseCheck(tr("Ignore case"), &_cleanBox), _ignoreAccentsCheck(tr("Ignore accents"), &_cleanBox),
+          _ignorePunctuationCheck(tr("Ignore punctuation"), &_cleanBox),
           _saveStr("")
     {
         constexpr int xSize = 600, ySize = 600;
@@ -53,6 +59,13 @@ namespace CSVCleaner
         _modifLayout.addWidget(&_selectedReset, 1, 1);
         _modifLayout.addWidget(&_selectedLineLabel);
         _modifLayout.addWidget(&_selectedExport, 3, 0, 1, 0);
+        _modifLayout.addWidget(&_cleanBox, 4, 0, 1, 0);
+        _cleanLayout.addWidget(&_cleanStart);
+        _cleanLayout.addWidget(&_showDupplicateCheck);
+        _cleanLayout.addWidget(&_cleanOptionsBox);
+        _cleanOptionsLayout.addWidget(&_ignoreCaseCheck);
+        _cleanOptionsLayout.addWidget(&_ignoreAccentsCheck);
+        _cleanOptionsLayout.addWidget(&_ignorePunctuationCheck);
 
         _previewTab.addTab(&_csvText, tr("Raw"));
         _previewTab.addTab(&_csvTable, tr("Table"));
@@ -70,6 +83,13 @@ namespace CSVCleaner
         connect(&_selectedAdd, SIGNAL(clicked()), this, SLOT(AddElement()));
         connect(&_selectedReset, SIGNAL(clicked()), this, SLOT(ResetElements()));
         connect(&_selectedExport, SIGNAL(clicked()), this, SLOT(ExportElements()));
+        connect(&_cleanStart, SIGNAL(clicked()), this, SLOT(CleanColumns()));
+        connect(&_showDupplicateCheck, SIGNAL(clicked(bool)), this, SLOT(ShowDupplicateStateChanged(bool)));
+    }
+
+    void MainWindow::CleanColumns() noexcept
+    {
+
     }
 
     void MainWindow::SaveFile() const noexcept
@@ -326,5 +346,12 @@ namespace CSVCleaner
         if (content != "")
             allLines.push_back(content);
         return (allLines);
+    }
+
+    void MainWindow::ShowDupplicateStateChanged(bool state) noexcept
+    {
+        _ignoreCaseCheck.setEnabled(!state);
+        _ignoreAccentsCheck.setEnabled(!state);
+        _ignorePunctuationCheck.setEnabled(!state);
     }
 }
