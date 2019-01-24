@@ -130,7 +130,7 @@ namespace CSVCleaner
 
     void MainWindow::ResetElements() noexcept
     {
-        _selectedLineLabel.clear();
+        _selectedLineLabel.setText(tr("Selected columns:\n"));
         _selectedLineList.clear();
         LoadDataInfo();
     }
