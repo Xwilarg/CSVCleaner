@@ -21,6 +21,7 @@ namespace CSVCleaner
         ~MainWindow() noexcept override = default;
 
     private:
+        void SaveFileInternal() const noexcept;
         std::string EscapeString(std::string &&str) const noexcept;
         void SetDataTable() noexcept;
         QWidget _mainWidget;
@@ -32,12 +33,14 @@ namespace CSVCleaner
         QHBoxLayout _configLayout;
         QGridLayout _defaultSeparatorLayout, _defaultNewLineLayout;
         QLineEdit _defaultSeparatorEdit, _defaultNewLineEdit;
-        std::unique_ptr<QAction> _openAction, _quitAction, _aboutQtAction;
+        std::unique_ptr<QAction> _openAction, _quitAction, _aboutQtAction, _saveAction, _saveAsAction;
         QPlainTextEdit _csvText;
         QTableWidget _csvTable;
-        QString _documentContent;
+        QString _documentContent, _saveStr;
 
     private slots:
+        void SaveFile() const noexcept;
+        void SaveFileAs() noexcept;
         void OpenFile();
         __attribute__((noreturn)) void ExitApp() const noexcept;
         void AboutQt() const noexcept;

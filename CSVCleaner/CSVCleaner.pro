@@ -13,3 +13,4 @@ HEADERS += \
         MainWindow.hpp
 
 INSTALLS += target
+

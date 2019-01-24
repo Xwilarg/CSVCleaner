@@ -15,15 +15,20 @@ namespace CSVCleaner
           _configLayout(&_configBox), _defaultSeparatorLayout(&_defaultSeparatorBox), _defaultNewLineLayout(&_defaultNewLineBox),
           _defaultSeparatorEdit(&_defaultSeparatorBox), _defaultNewLineEdit(&_defaultNewLineBox),
           _openAction(std::make_unique<QAction>(tr("Open"), this)), _quitAction(std::make_unique<QAction>(tr("Quit"), this)),
-          _aboutQtAction(std::make_unique<QAction>(tr("About Qt"), this)),
+          _aboutQtAction(std::make_unique<QAction>(tr("About Qt"), this)), _saveAction(std::make_unique<QAction>(tr("Save"), this)),
+          _saveAsAction(std::make_unique<QAction>(tr("Save as..."), this)),
           _csvText(&_previewTab), _csvTable(&_previewTab),
-          _documentContent("")
+          _documentContent(""), _saveStr("")
     {
         constexpr int xSize = 600, ySize = 400;
         setWindowTitle("CSVCleaner");
         resize(xSize, ySize);
 
         _openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
+        _saveAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
+        _saveAsAction->setShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_S));
+        _fileMenu->addAction(_saveAction.get());
+        _fileMenu->addAction(_saveAsAction.get());
         _fileMenu->addAction(_openAction.get());
         _fileMenu->addAction(_quitAction.get());
         _helpMenu->addAction(_aboutQtAction.get());
@@ -42,17 +47,35 @@ namespace CSVCleaner
         _defaultSeparatorEdit.setText(";");
         _defaultNewLineEdit.setText("\\n");
 
+        connect(_saveAction.get(), SIGNAL(triggered()), this, SLOT(SaveFile()));
+        connect(_saveAsAction.get(), SIGNAL(triggered()), this, SLOT(SaveFileAs()));
         connect(_openAction.get(), SIGNAL(triggered()), this, SLOT(OpenFile()));
         connect(_quitAction.get(), SIGNAL(triggered()), this, SLOT(ExitApp()));
         connect(_aboutQtAction.get(), SIGNAL(triggered()), this, SLOT(AboutQt()));
         connect(&_previewTab, SIGNAL(currentChanged(int)), this, SLOT(OnTableLoad(int)));
     }
 
-    void MainWindow::OpenFile()
+    void MainWindow::SaveFile() const noexcept
     {
-        QString path(QFileDialog::getOpenFileName(this, tr("Open CSV"), ".", tr("CSV (*.csv);;Other (*)")));
+        SaveFileInternal();
+    }
+
+    void MainWindow::SaveFileAs() noexcept
+    {
+        QString path(QFileDialog::getSaveFileName(this, tr("Save As"), "", tr("CSV (*.csv);;All Files (*)")));
         if (path != "")
         {
+            _saveStr = path;
+            SaveFileInternal();
+        }
+    }
+
+    void MainWindow::OpenFile()
+    {
+        QString path(QFileDialog::getOpenFileName(this, tr("Open CSV"), "", tr("CSV (*.csv);;All Files (*)")));
+        if (path != "")
+        {
+            _saveStr = path;
             QFile file(path);
             file.open(QIODevice::ReadOnly);
             _documentContent = QString(file.readAll());
@@ -69,6 +92,14 @@ namespace CSVCleaner
     void MainWindow::AboutQt() const noexcept
     {
         QMessageBox::aboutQt(nullptr);
+    }
+
+    void MainWindow::SaveFileInternal() const noexcept
+    {
+        QFile file(_saveStr);
+        file.open(QIODevice::WriteOnly);
+        file.write(_documentContent.toUtf8());
+        file.close();
     }
 
     void MainWindow::OnTableLoad(int index) noexcept
