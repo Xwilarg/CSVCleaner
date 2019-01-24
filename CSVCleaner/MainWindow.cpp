@@ -57,6 +57,7 @@ namespace CSVCleaner
         _previewTab.addTab(&_csvText, tr("Raw"));
         _previewTab.addTab(&_csvTable, tr("Table"));
         _csvText.setLineWrapMode(QPlainTextEdit::LineWrapMode::NoWrap);
+        _csvTable.setEditTriggers(QAbstractItemView::NoEditTriggers);
         _defaultSeparatorEdit.setText(";");
         _defaultNewLineEdit.setText("\\n");
 
