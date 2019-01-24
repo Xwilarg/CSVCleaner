@@ -21,24 +21,26 @@ namespace CSVCleaner
           _defaultSeparatorEdit(&_defaultSeparatorBox), _defaultNewLineEdit(&_defaultNewLineBox),
           _openAction(std::make_unique<QAction>(tr("Open"), this)), _quitAction(std::make_unique<QAction>(tr("Quit"), this)),
           _aboutQtAction(std::make_unique<QAction>(tr("About Qt"), this)), _saveAction(std::make_unique<QAction>(tr("Save"), this)),
-          _saveAsAction(std::make_unique<QAction>(tr("Save as..."), this)),
+          _saveAsAction(std::make_unique<QAction>(tr("Save as..."), this)), _refreshAction(std::make_unique<QAction>(tr("Reload"), this)),
           _csvText(&_previewTab), _csvTable(&_previewTab),
           _columnSelection(&_modifBox), _selectedLineLabel(tr("Selected columns:\n"), &_modifBox),
           _availableLineList(), _selectedLineList(),
-          _selectedAdd(tr("Add"), &_modifBox), _selectedReset(tr("Reset"), &_modifBox),
+          _selectedAdd(tr("Add"), &_modifBox), _selectedReset(tr("Refresh"), &_modifBox),
           _selectedExport(tr("Export")), _cleanStart(tr("Start"), &_cleanBox),
           _showDupplicateCheck(tr("Show dupplicates"), &_cleanBox),
           _ignoreCaseCheck(tr("Ignore case"), &_cleanBox), _ignoreAccentsCheck(tr("Ignore accents"), &_cleanBox),
           _ignorePunctuationCheck(tr("Ignore punctuation"), &_cleanBox),
-          _saveStr("")
+          _saveStr(""), _cleanWindow(nullptr)
     {
         constexpr int xSize = 600, ySize = 600;
         setWindowTitle("CSVCleaner");
         resize(xSize, ySize);
 
+        _refreshAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_R));
         _openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
         _saveAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
         _saveAsAction->setShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_S));
+        _fileMenu->addAction(_refreshAction.get());
         _fileMenu->addAction(_saveAction.get());
         _fileMenu->addAction(_saveAsAction.get());
         _fileMenu->addAction(_openAction.get());
@@ -74,6 +76,7 @@ namespace CSVCleaner
         _defaultSeparatorEdit.setText(";");
         _defaultNewLineEdit.setText("\\n");
 
+        connect(_refreshAction.get(), SIGNAL(triggered()), this, SLOT(RefreshProgram()));
         connect(_saveAction.get(), SIGNAL(triggered()), this, SLOT(SaveFile()));
         connect(_saveAsAction.get(), SIGNAL(triggered()), this, SLOT(SaveFileAs()));
         connect(_openAction.get(), SIGNAL(triggered()), this, SLOT(OpenFile()));
@@ -87,9 +90,24 @@ namespace CSVCleaner
         connect(&_showDupplicateCheck, SIGNAL(clicked(bool)), this, SLOT(ShowDupplicateStateChanged(bool)));
     }
 
+    void MainWindow::RefreshProgram() noexcept
+    {
+        LoadDataInfo();
+    }
+
     void MainWindow::CleanColumns() noexcept
     {
-
+        if (_selectedLineList.size() == 0)
+            QMessageBox::warning(this, tr("Error"), tr("There is no column selected"));
+        else if (_cleanWindow != nullptr)
+            QMessageBox::warning(this, tr("Error"), tr("A window is already opened"));
+        else
+        {
+            QList<QString> allColumns;
+            _cleanWindow = std::make_unique<CleanWindow>(this, _cleanWindow,
+                                _selectedLineList[0], allColumns);
+            _cleanWindow->show();
+        }
     }
 
     void MainWindow::SaveFile() const noexcept
@@ -120,7 +138,7 @@ namespace CSVCleaner
             QTextCodec *codec = QTextCodec::codecForUtfText(arr, QTextCodec::codecForName("System"));
             _csvText.document()->setPlainText(QString(codec->toUnicode(arr)));
             file.close();
-            LoadDataInfo();
+            RefreshProgram();
             ResetElements();
         }
     }
@@ -163,7 +181,7 @@ namespace CSVCleaner
     void MainWindow::ExportElements() noexcept
     {
         if (_selectedLineList.size() == 0)
-            QMessageBox::warning(this, tr("Invalid operation"), tr("There is nothing to export"));
+            QMessageBox::warning(this, tr("Error"), tr("There is no column selected"));
         else
         {
             QString path(QFileDialog::getSaveFileName(this, tr("Save As"), "", tr("CSV (*.csv);;All Files (*)")));

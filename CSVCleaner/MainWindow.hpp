@@ -13,6 +13,7 @@
 # include <QPushButton>
 # include <QCheckBox>
 # include <memory>
+# include "CleanWindow.hpp"
 
 namespace CSVCleaner
 {
@@ -22,7 +23,7 @@ namespace CSVCleaner
 
     public:
         MainWindow() noexcept;
-        ~MainWindow() noexcept override = default;
+        ~MainWindow() noexcept = default;
 
     private:
         size_t FindSeparatorOrNewLine(std::string &str, const std::string &separator, const std::string &newLine, size_t &size) const noexcept;
@@ -44,7 +45,7 @@ namespace CSVCleaner
         QHBoxLayout _defaultSeparatorLayout, _defaultNewLineLayout;
         QHBoxLayout _cleanOptionsLayout;
         QLineEdit _defaultSeparatorEdit, _defaultNewLineEdit;
-        std::unique_ptr<QAction> _openAction, _quitAction, _aboutQtAction, _saveAction, _saveAsAction;
+        std::unique_ptr<QAction> _openAction, _quitAction, _aboutQtAction, _saveAction, _saveAsAction, _refreshAction;
         QPlainTextEdit _csvText;
         QTableWidget _csvTable;
         QComboBox _columnSelection;
@@ -55,8 +56,10 @@ namespace CSVCleaner
         QCheckBox _showDupplicateCheck;
         QCheckBox _ignoreCaseCheck, _ignoreAccentsCheck, _ignorePunctuationCheck;
         QString _saveStr;
+        std::unique_ptr<CleanWindow> _cleanWindow;
 
     private slots:
+        void RefreshProgram() noexcept;
         void CleanColumns() noexcept;
         void SaveFile() const noexcept;
         void SaveFileAs() noexcept;

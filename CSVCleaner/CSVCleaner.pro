@@ -7,10 +7,11 @@ CONFIG += c++14
 
 SOURCES += \
         main.cpp \
-        MainWindow.cpp
+        MainWindow.cpp \
+        CleanWindow.cpp
 
 HEADERS += \
-        MainWindow.hpp
+        MainWindow.hpp \
+        CleanWindow.hpp
 
 INSTALLS += target
-
