@@ -28,7 +28,7 @@ namespace CSVCleaner
           _selectedAdd(tr("Add"), &_modifBox), _selectedReset(tr("Refresh"), &_modifBox),
           _selectedExport(tr("Export")), _cleanStart(tr("Start"), &_cleanBox),
           _cleanAll(tr("Clean all"), &_modifBox),
-          _showDupplicateCheck(tr("Show dupplicates"), &_cleanBox),
+          _showDupplicateCheck(tr("Don't merge"), &_cleanBox),
           _ignoreCaseCheck(tr("Ignore case"), &_cleanBox), _ignoreAccentsCheck(tr("Ignore accents"), &_cleanBox),
           _ignorePunctuationCheck(tr("Ignore punctuation"), &_cleanBox),
           _ignoreNewLine(tr("Ignore \\n in table value"), &_defaultNewLineBox),
@@ -118,35 +118,43 @@ namespace CSVCleaner
         else
         {
             // We get all columns that user selected
-           /*const std::string &separator = UnescapeString(_defaultSeparatorEdit.text().toStdString());
+            const std::string &separator = UnescapeString(_defaultSeparatorEdit.text().toStdString());
             const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
             std::vector<std::string> allLines = GetAllLines();
             QList<QList<QString>> finalLines;
-            int i = -1;
-            QList<int> allIds = GetIds(allLines[0]);
+            int i;
             std::string token;
             size_t size, pos;
+            bool dontCheck = _showDupplicateCheck.isChecked();
             for (std::string str : allLines)
             {
-                if (i++ == -1)
-                    continue;
-                i = 0;
                 QList<QString> tmpList;
-                while ((pos = FindSeparatorOrNewLine(str, separator, newLine, size)) != std::string::npos) {
-                    token = str.substr(0, pos);
-                    if (allIds.contains(i))
-                        tmpList.push_back(QString::fromStdString(token));
-                    str.erase(0, pos + size);
-                    i++;
+                for (const auto &elem : _selectedLineList)
+                {
+                    i = 0;
+                    std::string tmp = str;
+                    while ((pos = FindSeparatorOrNewLine(tmp, separator, newLine, size)) != std::string::npos) {
+                        token = tmp.substr(0, pos);
+                        if (elem.second == i)
+                        {
+                            QString qToken = QString::fromStdString(token);
+                            if (dontCheck ||
+                                    (!dontCheck && !IsEmpty(token) && !tmpList.contains(qToken)))
+                                tmpList.push_back(qToken);
+                            else
+                                tmpList.push_back(nullptr);
+                            break;
+                        }
+                        tmp.erase(0, pos + size);
+                        i++;
+                    }
                 }
                 finalLines.push_back(std::move(tmpList));
             }
 
             // We create a new window (see CleanWindow)
-            //_cleanWindow = std::make_unique<CleanWindow>(this, _cleanWindow,
-            //                    _selectedLineList, finalLines[0]);
+            _cleanWindow = std::make_unique<CleanWindow>(this, _cleanWindow, finalLines);
             _cleanWindow->show();
-            */
         }
     }
 
