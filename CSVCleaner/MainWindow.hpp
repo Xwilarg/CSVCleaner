@@ -28,10 +28,11 @@ namespace CSVCleaner
     private:
         size_t FindSeparatorOrNewLine(std::string &str, const std::string &separator, const std::string &newLine, size_t &size) const noexcept;
         void SaveFileInternal() const noexcept;
-        std::string EscapeString(std::string &&str) const noexcept;
+        std::string UnescapeString(std::string &&str) const noexcept;
         void LoadDataInfo() noexcept;
         void UpdateColumnList() noexcept;
         void SetDataTable() noexcept;
+        std::string GetFirstLine() const noexcept;
         std::vector<std::string> GetAllLines() const noexcept;
         QWidget _mainWidget;
         QMenu *_fileMenu, *_helpMenu;
@@ -50,7 +51,8 @@ namespace CSVCleaner
         QTableWidget _csvTable;
         QComboBox _columnSelection;
         QLabel _selectedLineLabel;
-        QList<QString> _availableLineList, _selectedLineList;
+        QList<QString> _availableLineList;
+        QList<std::pair<QString, int>> _selectedLineList;
         QPushButton _selectedAdd, _selectedReset;
         QPushButton _selectedExport, _cleanStart;
         QCheckBox _showDupplicateCheck;

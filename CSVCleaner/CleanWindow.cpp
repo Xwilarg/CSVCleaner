@@ -1,3 +1,4 @@
+#include <QDebug>
 #include "CleanWindow.hpp"
 
 namespace CSVCleaner
@@ -13,11 +14,14 @@ namespace CSVCleaner
 
         setCentralWidget(&_mainWidget);
         _mainLayout.addWidget(&_mainTable);
-
         _mainTable.setColumnCount(2);
+        _mainTable.setRowCount(allColumns.size());
         _mainTable.setHorizontalHeaderLabels({
             "Old value", "New value"
         });
+        int i = 0;
+        for (const QString &col : allColumns)
+            _mainTable.setItem(0, i++, new QTableWidgetItem(col));
     }
 
     void CleanWindow::closeEvent(QCloseEvent *event) noexcept

@@ -36,6 +36,7 @@ namespace CSVCleaner
         setWindowTitle("CSVCleaner");
         resize(xSize, ySize);
 
+        // Set menu
         _refreshAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_R));
         _openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
         _saveAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
@@ -47,6 +48,7 @@ namespace CSVCleaner
         _fileMenu->addAction(_quitAction.get());
         _helpMenu->addAction(_aboutQtAction.get());
 
+        // Set layout
         setCentralWidget(&_mainWidget);
         _mainLayout.addWidget(&_previewBox);
         _mainLayout.addWidget(&_configBox);
@@ -69,6 +71,7 @@ namespace CSVCleaner
         _cleanOptionsLayout.addWidget(&_ignoreAccentsCheck);
         _cleanOptionsLayout.addWidget(&_ignorePunctuationCheck);
 
+        // Modify widgets
         _previewTab.addTab(&_csvText, tr("Raw"));
         _previewTab.addTab(&_csvTable, tr("Table"));
         _csvText.setLineWrapMode(QPlainTextEdit::LineWrapMode::NoWrap);
@@ -76,6 +79,7 @@ namespace CSVCleaner
         _defaultSeparatorEdit.setText(";");
         _defaultNewLineEdit.setText("\\n");
 
+        // Set connections
         connect(_refreshAction.get(), SIGNAL(triggered()), this, SLOT(RefreshProgram()));
         connect(_saveAction.get(), SIGNAL(triggered()), this, SLOT(SaveFile()));
         connect(_saveAsAction.get(), SIGNAL(triggered()), this, SLOT(SaveFileAs()));
@@ -90,11 +94,13 @@ namespace CSVCleaner
         connect(&_showDupplicateCheck, SIGNAL(clicked(bool)), this, SLOT(ShowDupplicateStateChanged(bool)));
     }
 
+    /// Refresh program (useful when user change config)
     void MainWindow::RefreshProgram() noexcept
     {
         LoadDataInfo();
     }
 
+    /// "Clean Start" command
     void MainWindow::CleanColumns() noexcept
     {
         if (_selectedLineList.size() == 0)
@@ -103,10 +109,36 @@ namespace CSVCleaner
             QMessageBox::warning(this, tr("Error"), tr("A window is already opened"));
         else
         {
-            QList<QString> allColumns;
-            _cleanWindow = std::make_unique<CleanWindow>(this, _cleanWindow,
-                                _selectedLineList[0], allColumns);
+            // We get all columns that user selected
+           /*const std::string &separator = UnescapeString(_defaultSeparatorEdit.text().toStdString());
+            const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
+            std::vector<std::string> allLines = GetAllLines();
+            QList<QList<QString>> finalLines;
+            int i = -1;
+            QList<int> allIds = GetIds(allLines[0]);
+            std::string token;
+            size_t size, pos;
+            for (std::string str : allLines)
+            {
+                if (i++ == -1)
+                    continue;
+                i = 0;
+                QList<QString> tmpList;
+                while ((pos = FindSeparatorOrNewLine(str, separator, newLine, size)) != std::string::npos) {
+                    token = str.substr(0, pos);
+                    if (allIds.contains(i))
+                        tmpList.push_back(QString::fromStdString(token));
+                    str.erase(0, pos + size);
+                    i++;
+                }
+                finalLines.push_back(std::move(tmpList));
+            }
+
+            // We create a new window (see CleanWindow)
+            //_cleanWindow = std::make_unique<CleanWindow>(this, _cleanWindow,
+            //                    _selectedLineList, finalLines[0]);
             _cleanWindow->show();
+            */
         }
     }
 
@@ -132,7 +164,6 @@ namespace CSVCleaner
         {
             _saveStr = path;
             QFile file(path);
-
             file.open(QIODevice::ReadOnly);
             QByteArray arr = file.readAll();
             QTextCodec *codec = QTextCodec::codecForUtfText(arr, QTextCodec::codecForName("System"));
@@ -153,24 +184,43 @@ namespace CSVCleaner
         QMessageBox::aboutQt(nullptr);
     }
 
+    /// When user go in "Table" tab we reload it (in case he changed things in the raw tab)
     void MainWindow::OnTableLoad(int index) noexcept
     {
         if (index == 1)
             SetDataTable();
     }
 
+    /// When player add a column
     void MainWindow::AddElement() noexcept
     {
         const QString &element = _columnSelection.currentText();
-        if (element  != "")
+        if (element != "")
         {
             _selectedLineLabel.setText(_selectedLineLabel.text() + element + '\n');
-            _selectedLineList.push_back(element);
-            _availableLineList.removeOne(element);
+
+            // Get column id
+            std::string firstLine = GetFirstLine();
+            std::string token;
+            size_t pos, size;
+            const std::string &separator = UnescapeString(_defaultSeparatorEdit.text().toStdString());
+            const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
+            int i = 0;
+            while ((pos = FindSeparatorOrNewLine(firstLine, separator, newLine, size)) != std::string::npos) {
+                token = firstLine.substr(0, pos);
+                if (QString::fromStdString(token) == element)
+                {
+                    _selectedLineList.push_back(std::pair<QString, int>(element, i));
+                    _availableLineList.removeOne(element);
+                }
+                firstLine.erase(0, pos + size);
+                i++;
+            }
             UpdateColumnList();
         }
     }
 
+    /// Reset all columns
     void MainWindow::ResetElements() noexcept
     {
         _selectedLineLabel.setText(tr("Selected columns:\n"));
@@ -178,6 +228,7 @@ namespace CSVCleaner
         LoadDataInfo();
     }
 
+    /// Export chosen columns
     void MainWindow::ExportElements() noexcept
     {
         if (_selectedLineList.size() == 0)
@@ -190,46 +241,47 @@ namespace CSVCleaner
                 QFile file(path);
                 file.open(QIODevice::WriteOnly);
                 std::vector<std::string> allLines = GetAllLines();
-                const std::string &separator = EscapeString(_defaultSeparatorEdit.text().toStdString());
-                const std::string &newLine = EscapeString(_defaultNewLineEdit.text().toStdString());
+                const std::string &separator = UnescapeString(_defaultSeparatorEdit.text().toStdString());
+                const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
                 size_t pos;
                 int i = 0;
                 std::string token;
-                QList<int> keepHeaders;
-                std::string &firstLine = allLines[0];
+
+                // CSV header
                 size_t size;
-                while ((pos = FindSeparatorOrNewLine(firstLine, separator, newLine, size)) != std::string::npos) {
-                    token = firstLine.substr(0, pos);
-                    if (_selectedLineList.contains(QString::fromStdString(token)))
-                        keepHeaders.push_back(i);
-                    firstLine.erase(0, pos + size);
-                    i++;
-                }
                 std::string finalCsv = "";
                 bool isFirst = true;
-                for (const QString &str : _selectedLineList)
+                for (const auto &str : _selectedLineList)
                 {
                     if (!isFirst)
                         finalCsv += separator;
                     isFirst = false;
-                    finalCsv += str.toStdString();
+                    finalCsv += str.first.toStdString();
                 }
                 finalCsv += newLine;
+
+                // CSV body (using previous ids)
                 for (size_t y = 1; y < allLines.size(); y++)
                 {
-                    i = 0;
                     isFirst = true;
-                    while ((pos = FindSeparatorOrNewLine(allLines[y], separator, newLine, size)) != std::string::npos) {
-                        token = allLines[y].substr(0, pos);
-                        if (keepHeaders.contains(i))
-                        {
-                            if (!isFirst)
-                                finalCsv += separator;
-                            finalCsv += token;
-                            isFirst = false;
+                    for (int z = 0; z < _selectedLineList.size(); z++)
+                    {
+                        i = 0;
+                        std::string tmp = allLines[y];
+                        while ((pos = FindSeparatorOrNewLine(tmp, separator, newLine, size)) != std::string::npos) {
+                            token = tmp.substr(0, pos);
+                            qDebug() << i << " == "<< _selectedLineList[z].second << "  "<< QString::fromStdString( token);
+                            if (_selectedLineList[z].second == i)
+                            {
+                                if (!isFirst)
+                                    finalCsv += separator;
+                                finalCsv += token;
+                                isFirst = false;
+                                break;
+                            }
+                            tmp.erase(0, pos + size);
+                            i++;
                         }
-                        allLines[y].erase(0, pos + size);
-                        i++;
                     }
                     finalCsv += newLine;
                 }
@@ -240,6 +292,7 @@ namespace CSVCleaner
         }
     }
 
+    /// Find next separator or new line in a string
     size_t MainWindow::FindSeparatorOrNewLine(std::string &str, const std::string &separator, const std::string &newLine, size_t &size) const noexcept
     {
         size_t pos = str.find(separator);
@@ -258,6 +311,7 @@ namespace CSVCleaner
         return (pos);
     }
 
+    /// Called by Save and SaveAs
     void MainWindow::SaveFileInternal() const noexcept
     {
         QFile file(_saveStr);
@@ -266,7 +320,8 @@ namespace CSVCleaner
         file.close();
     }
 
-    std::string MainWindow::EscapeString(std::string &&str) const noexcept
+    /// Unescape a string (\\n --> \n)
+    std::string MainWindow::UnescapeString(std::string &&str) const noexcept
     {
         std::string finalStr = "";
         std::string::const_iterator it = str.begin();
@@ -287,11 +342,12 @@ namespace CSVCleaner
         return (finalStr);
     }
 
+    /// Update _columnSelection drop down list with raw CSV
     void MainWindow::LoadDataInfo() noexcept
     {
         _availableLineList.clear();
-        const std::string &separator = EscapeString(_defaultSeparatorEdit.text().toStdString());
-        const std::string &newLine = EscapeString(_defaultNewLineEdit.text().toStdString());
+        const std::string &separator = UnescapeString(_defaultSeparatorEdit.text().toStdString());
+        const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
         const std::string &content = _csvText.toPlainText().toStdString();
         std::string firstLine = content.substr(0, content.find(newLine));
         size_t pos = 0;
@@ -305,6 +361,7 @@ namespace CSVCleaner
         UpdateColumnList();
     }
 
+    /// Update _columnSelection drop down list with current items
     void MainWindow::UpdateColumnList() noexcept
     {
         _columnSelection.clear();
@@ -312,14 +369,15 @@ namespace CSVCleaner
             _columnSelection.addItem(str);
     }
 
+    /// Update CSV table
     void MainWindow::SetDataTable() noexcept
     {
         _csvTable.reset();
         std::vector<std::string> allLines = GetAllLines();
         if (allLines.size() == 1)
             return;
-        const std::string &separator = EscapeString(_defaultSeparatorEdit.text().toStdString());
-        const std::string &newLine = EscapeString(_defaultNewLineEdit.text().toStdString());
+        const std::string &separator = UnescapeString(_defaultSeparatorEdit.text().toStdString());
+        const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
         QList<QString> header;
         size_t pos;
         int i = 0;
@@ -348,9 +406,18 @@ namespace CSVCleaner
         }
     }
 
+    /// Get first line of raw CSV
+    std::string MainWindow::GetFirstLine() const noexcept
+    {
+        const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
+        std::string content = _csvText.toPlainText().toStdString();
+        return (content.substr(0, content.find(newLine)));
+    }
+
+    /// Get all lines of raw CSV
     std::vector<std::string> MainWindow::GetAllLines() const noexcept
     {
-        const std::string &newLine = EscapeString(_defaultNewLineEdit.text().toStdString());
+        const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
         std::string content = _csvText.toPlainText().toStdString();
         std::string firstLine = content.substr(0, content.find(newLine));
         size_t pos = 0;
