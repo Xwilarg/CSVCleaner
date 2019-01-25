@@ -32,6 +32,7 @@ namespace CSVCleaner
         void LoadDataInfo() noexcept;
         void UpdateColumnList() noexcept;
         void SetDataTable() noexcept;
+        std::string RemoveNewLine(std::string &&str) const noexcept;
         std::string GetFirstLine() const noexcept;
         std::vector<std::string> GetAllLines() const noexcept;
         QWidget _mainWidget;
@@ -43,7 +44,7 @@ namespace CSVCleaner
         QVBoxLayout _previewLayout, _mainLayout;
         QGridLayout _modifLayout, _cleanLayout;
         QHBoxLayout _configLayout;
-        QHBoxLayout _defaultSeparatorLayout, _defaultNewLineLayout;
+        QVBoxLayout _defaultSeparatorLayout, _defaultNewLineLayout;
         QHBoxLayout _cleanOptionsLayout;
         QLineEdit _defaultSeparatorEdit, _defaultNewLineEdit;
         std::unique_ptr<QAction> _openAction, _quitAction, _aboutQtAction, _saveAction, _saveAsAction, _refreshAction;
@@ -57,6 +58,7 @@ namespace CSVCleaner
         QPushButton _selectedExport, _cleanStart;
         QCheckBox _showDupplicateCheck;
         QCheckBox _ignoreCaseCheck, _ignoreAccentsCheck, _ignorePunctuationCheck;
+        QCheckBox _ignoreNewLine;
         QString _saveStr;
         std::unique_ptr<CleanWindow> _cleanWindow;
 
@@ -73,6 +75,7 @@ namespace CSVCleaner
         void ResetElements() noexcept;
         void ExportElements() noexcept;
         void ShowDupplicateStateChanged(bool state) noexcept;
+        void NewLineTextChanged(const QString &str) noexcept;
     };
 }
 

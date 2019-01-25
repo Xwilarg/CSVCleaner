@@ -30,9 +30,10 @@ namespace CSVCleaner
           _showDupplicateCheck(tr("Show dupplicates"), &_cleanBox),
           _ignoreCaseCheck(tr("Ignore case"), &_cleanBox), _ignoreAccentsCheck(tr("Ignore accents"), &_cleanBox),
           _ignorePunctuationCheck(tr("Ignore punctuation"), &_cleanBox),
+          _ignoreNewLine(tr("Ignore \\n in table value"), &_defaultNewLineBox),
           _saveStr(""), _cleanWindow(nullptr)
     {
-        constexpr int xSize = 600, ySize = 600;
+        constexpr int xSize = 600, ySize = 800;
         setWindowTitle("CSVCleaner");
         resize(xSize, ySize);
 
@@ -58,6 +59,7 @@ namespace CSVCleaner
         _configLayout.addWidget(&_defaultNewLineBox);
         _defaultSeparatorLayout.addWidget(&_defaultSeparatorEdit);
         _defaultNewLineLayout.addWidget(&_defaultNewLineEdit);
+        _defaultNewLineLayout.addWidget(&_ignoreNewLine);
         _modifLayout.addWidget(&_columnSelection, 0, 0, 1, 0);
         _modifLayout.addWidget(&_selectedAdd);
         _modifLayout.addWidget(&_selectedReset, 1, 1);
@@ -78,6 +80,8 @@ namespace CSVCleaner
         _csvTable.setEditTriggers(QAbstractItemView::NoEditTriggers);
         _defaultSeparatorEdit.setText(";");
         _defaultNewLineEdit.setText("\\n");
+        _ignoreNewLine.setChecked(true);
+        _ignoreNewLine.setEnabled(false);
 
         // Set connections
         connect(_refreshAction.get(), SIGNAL(triggered()), this, SLOT(RefreshProgram()));
@@ -92,6 +96,7 @@ namespace CSVCleaner
         connect(&_selectedExport, SIGNAL(clicked()), this, SLOT(ExportElements()));
         connect(&_cleanStart, SIGNAL(clicked()), this, SLOT(CleanColumns()));
         connect(&_showDupplicateCheck, SIGNAL(clicked(bool)), this, SLOT(ShowDupplicateStateChanged(bool)));
+        connect(&_defaultNewLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(NewLineTextChanged(const QString&)));
     }
 
     /// Refresh program (useful when user change config)
@@ -270,7 +275,6 @@ namespace CSVCleaner
                         std::string tmp = allLines[y];
                         while ((pos = FindSeparatorOrNewLine(tmp, separator, newLine, size)) != std::string::npos) {
                             token = tmp.substr(0, pos);
-                            qDebug() << i << " == "<< _selectedLineList[z].second << "  "<< QString::fromStdString( token);
                             if (_selectedLineList[z].second == i)
                             {
                                 if (!isFirst)
@@ -406,6 +410,17 @@ namespace CSVCleaner
         }
     }
 
+    std::string MainWindow::RemoveNewLine(std::string &&str) const noexcept
+    {
+        if (_ignoreNewLine.isChecked())
+            return (std::move(str));
+        std::string tmp = "";
+        for (const char &c : str)
+            if (c != '\n')
+                tmp += c;
+        return (tmp);
+    }
+
     /// Get first line of raw CSV
     std::string MainWindow::GetFirstLine() const noexcept
     {
@@ -425,7 +440,7 @@ namespace CSVCleaner
         std::vector<std::string> allLines;
         while ((pos = content.find(newLine)) != std::string::npos) {
             token = content.substr(0, pos);
-            allLines.push_back(token);
+            allLines.push_back(RemoveNewLine(std::move(token)));
             content.erase(0, pos + newLine.size());
         }
         if (content != "")
@@ -438,5 +453,10 @@ namespace CSVCleaner
         _ignoreCaseCheck.setEnabled(!state);
         _ignoreAccentsCheck.setEnabled(!state);
         _ignorePunctuationCheck.setEnabled(!state);
+    }
+
+    void MainWindow::NewLineTextChanged(const QString &str) noexcept
+    {
+        _ignoreNewLine.setEnabled(str != "\\n");
     }
 }
