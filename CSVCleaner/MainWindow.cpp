@@ -27,6 +27,7 @@ namespace CSVCleaner
           _availableLineList(), _selectedLineList(),
           _selectedAdd(tr("Add"), &_modifBox), _selectedReset(tr("Refresh"), &_modifBox),
           _selectedExport(tr("Export")), _cleanStart(tr("Start"), &_cleanBox),
+          _cleanAll(tr("Clean all"), &_modifBox),
           _showDupplicateCheck(tr("Show dupplicates"), &_cleanBox),
           _ignoreCaseCheck(tr("Ignore case"), &_cleanBox), _ignoreAccentsCheck(tr("Ignore accents"), &_cleanBox),
           _ignorePunctuationCheck(tr("Ignore punctuation"), &_cleanBox),
@@ -60,12 +61,13 @@ namespace CSVCleaner
         _defaultSeparatorLayout.addWidget(&_defaultSeparatorEdit);
         _defaultNewLineLayout.addWidget(&_defaultNewLineEdit);
         _defaultNewLineLayout.addWidget(&_ignoreNewLine);
-        _modifLayout.addWidget(&_columnSelection, 0, 0, 1, 0);
+        _modifLayout.addWidget(&_cleanAll, 0, 0, 1, 0);
+        _modifLayout.addWidget(&_columnSelection, 1, 0, 1, 0);
         _modifLayout.addWidget(&_selectedAdd);
-        _modifLayout.addWidget(&_selectedReset, 1, 1);
+        _modifLayout.addWidget(&_selectedReset, 2, 1);
         _modifLayout.addWidget(&_selectedLineLabel);
-        _modifLayout.addWidget(&_selectedExport, 3, 0, 1, 0);
-        _modifLayout.addWidget(&_cleanBox, 4, 0, 1, 0);
+        _modifLayout.addWidget(&_selectedExport, 4, 0, 1, 0);
+        _modifLayout.addWidget(&_cleanBox, 5, 0, 1, 0);
         _cleanLayout.addWidget(&_cleanStart);
         _cleanLayout.addWidget(&_showDupplicateCheck);
         _cleanLayout.addWidget(&_cleanOptionsBox);
@@ -95,6 +97,7 @@ namespace CSVCleaner
         connect(&_selectedReset, SIGNAL(clicked()), this, SLOT(ResetElements()));
         connect(&_selectedExport, SIGNAL(clicked()), this, SLOT(ExportElements()));
         connect(&_cleanStart, SIGNAL(clicked()), this, SLOT(CleanColumns()));
+        connect(&_cleanAll, SIGNAL(clicked()), this, SLOT(CleanRawCsv()));
         connect(&_showDupplicateCheck, SIGNAL(clicked(bool)), this, SLOT(ShowDupplicateStateChanged(bool)));
         connect(&_defaultNewLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(NewLineTextChanged(const QString&)));
     }
@@ -296,6 +299,30 @@ namespace CSVCleaner
         }
     }
 
+    void MainWindow::ShowDupplicateStateChanged(bool state) noexcept
+    {
+        _ignoreCaseCheck.setEnabled(!state);
+        _ignoreAccentsCheck.setEnabled(!state);
+        _ignorePunctuationCheck.setEnabled(!state);
+    }
+
+    void MainWindow::NewLineTextChanged(const QString &str) noexcept
+    {
+        _ignoreNewLine.setEnabled(str != "\\n");
+    }
+
+    // Clean CSV (remove useless \n)
+    void MainWindow::CleanRawCsv() noexcept
+    {
+        const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
+        bool isBasicNewLine = newLine == "\n";
+        std::vector<std::string> allLines = GetAllLines(true);
+        QString finalCsv = "";
+        for (const std::string &str : allLines)
+            finalCsv += QString::fromStdString(str + newLine) + ((!isBasicNewLine) ? ("\n") : (""));
+        _csvText.document()->setPlainText(finalCsv);
+    }
+
     /// Find next separator or new line in a string
     size_t MainWindow::FindSeparatorOrNewLine(std::string &str, const std::string &separator, const std::string &newLine, size_t &size) const noexcept
     {
@@ -410,9 +437,9 @@ namespace CSVCleaner
         }
     }
 
-    std::string MainWindow::RemoveNewLine(std::string &&str) const noexcept
+    std::string MainWindow::RemoveNewLine(std::string &&str, bool forceClean) const noexcept
     {
-        if (_ignoreNewLine.isChecked())
+        if (_ignoreNewLine.isChecked() && !forceClean)
             return (std::move(str));
         std::string tmp = "";
         for (const char &c : str)
@@ -430,7 +457,7 @@ namespace CSVCleaner
     }
 
     /// Get all lines of raw CSV
-    std::vector<std::string> MainWindow::GetAllLines() const noexcept
+    std::vector<std::string> MainWindow::GetAllLines(bool forceClean) const noexcept
     {
         const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
         std::string content = _csvText.toPlainText().toStdString();
@@ -440,23 +467,20 @@ namespace CSVCleaner
         std::vector<std::string> allLines;
         while ((pos = content.find(newLine)) != std::string::npos) {
             token = content.substr(0, pos);
-            allLines.push_back(RemoveNewLine(std::move(token)));
+            if (!forceClean || !IsEmpty(token))
+                allLines.push_back(RemoveNewLine(std::move(token), forceClean));
             content.erase(0, pos + newLine.size());
         }
-        if (content != "")
+        if (!IsEmpty(content) && content != newLine)
             allLines.push_back(content);
         return (allLines);
     }
 
-    void MainWindow::ShowDupplicateStateChanged(bool state) noexcept
+    bool MainWindow::IsEmpty(const std::string &str) const noexcept
     {
-        _ignoreCaseCheck.setEnabled(!state);
-        _ignoreAccentsCheck.setEnabled(!state);
-        _ignorePunctuationCheck.setEnabled(!state);
-    }
-
-    void MainWindow::NewLineTextChanged(const QString &str) noexcept
-    {
-        _ignoreNewLine.setEnabled(str != "\\n");
+        for (const char &c : str)
+            if (c >= 21 && c != ' ')
+                return (false);
+        return (true);
     }
 }

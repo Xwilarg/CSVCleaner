@@ -32,9 +32,10 @@ namespace CSVCleaner
         void LoadDataInfo() noexcept;
         void UpdateColumnList() noexcept;
         void SetDataTable() noexcept;
-        std::string RemoveNewLine(std::string &&str) const noexcept;
+        std::string RemoveNewLine(std::string &&str, bool forceClean) const noexcept;
         std::string GetFirstLine() const noexcept;
-        std::vector<std::string> GetAllLines() const noexcept;
+        std::vector<std::string> GetAllLines(bool forceClean = false) const noexcept;
+        bool IsEmpty(const std::string &str) const noexcept;
         QWidget _mainWidget;
         QMenu *_fileMenu, *_helpMenu;
         QGroupBox _previewBox, _configBox, _modifBox, _cleanBox;
@@ -56,6 +57,7 @@ namespace CSVCleaner
         QList<std::pair<QString, int>> _selectedLineList;
         QPushButton _selectedAdd, _selectedReset;
         QPushButton _selectedExport, _cleanStart;
+        QPushButton _cleanAll;
         QCheckBox _showDupplicateCheck;
         QCheckBox _ignoreCaseCheck, _ignoreAccentsCheck, _ignorePunctuationCheck;
         QCheckBox _ignoreNewLine;
@@ -76,6 +78,7 @@ namespace CSVCleaner
         void ExportElements() noexcept;
         void ShowDupplicateStateChanged(bool state) noexcept;
         void NewLineTextChanged(const QString &str) noexcept;
+        void CleanRawCsv() noexcept;
     };
 }
 
