@@ -4,7 +4,7 @@
 namespace CSVCleaner
 {
     CleanWindow::CleanWindow(QMainWindow *window, std::unique_ptr<CleanWindow>& cleanWindowRef,
-                             const QList<QList<QString>> &allColumns) noexcept
+                             const QList<QList<QString>> &allColumns, bool removeDupplicate) noexcept
         : QMainWindow(window),
           _mainWidget(this), _mainTable(&_mainWidget), _mainLayout(&_mainWidget),
           _cleanWindowRef(cleanWindowRef)
@@ -16,8 +16,14 @@ namespace CSVCleaner
         _mainLayout.addWidget(&_mainTable);
         QList<QString> tokens;
         for (int i = 1; i < allColumns.size(); i++)
-            if (allColumns[i][0] != nullptr) // TODO: Crash if all lines don't have the same nb of elements
-                tokens.push_back(allColumns[i][0]);
+        {
+            auto &elem = allColumns[i][0]; // TODO: Crash if all lines don't have the same nb of elements
+            if (elem == nullptr)
+                continue;
+            if (!removeDupplicate ||
+                    (removeDupplicate && !tokens.contains(elem)))
+                tokens.push_back(elem);
+        }
         _mainTable.setColumnCount(2);
         _mainTable.setRowCount(tokens.size());
         _mainTable.setHorizontalHeaderLabels({

@@ -21,11 +21,11 @@ namespace CSVCleaner
           _defaultSeparatorEdit(&_defaultSeparatorBox), _defaultNewLineEdit(&_defaultNewLineBox),
           _openAction(std::make_unique<QAction>(tr("Open"), this)), _quitAction(std::make_unique<QAction>(tr("Quit"), this)),
           _aboutQtAction(std::make_unique<QAction>(tr("About Qt"), this)), _saveAction(std::make_unique<QAction>(tr("Save"), this)),
-          _saveAsAction(std::make_unique<QAction>(tr("Save as..."), this)), _refreshAction(std::make_unique<QAction>(tr("Reload"), this)),
+          _saveAsAction(std::make_unique<QAction>(tr("Save as..."), this)), _refreshAction(std::make_unique<QAction>(tr("Refresh"), this)),
           _csvText(&_previewTab), _csvTable(&_previewTab),
           _columnSelection(&_modifBox), _selectedLineLabel(tr("Selected columns:\n"), &_modifBox),
           _availableLineList(), _selectedLineList(),
-          _selectedAdd(tr("Add"), &_modifBox), _selectedReset(tr("Refresh"), &_modifBox),
+          _selectedAdd(tr("Add"), &_modifBox), _selectedReset(tr("Reset"), &_modifBox),
           _selectedExport(tr("Export")), _cleanStart(tr("Start"), &_cleanBox),
           _cleanAll(tr("Clean all"), &_modifBox),
           _showDupplicateCheck(tr("Don't merge"), &_cleanBox),
@@ -140,7 +140,7 @@ namespace CSVCleaner
                             QString qToken = QString::fromStdString(token);
                             if (dontCheck ||
                                     (!dontCheck && !IsEmpty(token) && !tmpList.contains(qToken)))
-                                tmpList.push_back(qToken);
+                                tmpList.push_back(CleanWord(std::move(qToken)));
                             else
                                 tmpList.push_back(nullptr);
                             break;
@@ -153,7 +153,7 @@ namespace CSVCleaner
             }
 
             // We create a new window (see CleanWindow)
-            _cleanWindow = std::make_unique<CleanWindow>(this, _cleanWindow, finalLines);
+            _cleanWindow = std::make_unique<CleanWindow>(this, _cleanWindow, finalLines, !dontCheck);
             _cleanWindow->show();
         }
     }
@@ -331,6 +331,32 @@ namespace CSVCleaner
         _csvText.document()->setPlainText(finalCsv);
     }
 
+    QString MainWindow::CleanWord(QString &&str) const noexcept
+    {
+        if (_showDupplicateCheck.isChecked())
+            return (std::move(str));
+        QString tmp;
+        bool ignoreCase = _ignoreCaseCheck.isChecked();
+        bool ignorePunctuation = _ignorePunctuationCheck.isChecked();
+        bool ignoreAccents = _ignoreAccentsCheck.isChecked();
+        for (QChar ch : str)
+        {
+            ushort c = ch.unicode();
+            if (ignorePunctuation &&
+                    ((c >= 33 && c <= 47) || (c >= 58 && c <= 64)
+                     || (c >= 91 && c <= 96) || (c >= 123 && c <= 126)))
+                continue;
+            if (ignoreAccents) // TODO
+            {
+            }
+            ch = static_cast<QChar>(c);
+            if (ignoreCase)
+                ch = ch.toLower();
+            tmp += ch;
+        }
+        return (tmp);
+    }
+
     /// Find next separator or new line in a string
     size_t MainWindow::FindSeparatorOrNewLine(std::string &str, const std::string &separator, const std::string &newLine, size_t &size) const noexcept
     {
@@ -486,7 +512,7 @@ namespace CSVCleaner
 
     bool MainWindow::IsEmpty(const std::string &str) const noexcept
     {
-        for (const char &c : str)
+        for (const char &c : str) // TODO: Accentuated characters ?
             if (c >= 21 && c != ' ')
                 return (false);
         return (true);

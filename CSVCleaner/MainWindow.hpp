@@ -26,6 +26,7 @@ namespace CSVCleaner
         ~MainWindow() noexcept = default;
 
     private:
+        QString CleanWord(QString &&str) const noexcept;
         size_t FindSeparatorOrNewLine(std::string &str, const std::string &separator, const std::string &newLine, size_t &size) const noexcept;
         void SaveFileInternal() const noexcept;
         std::string UnescapeString(std::string &&str) const noexcept;

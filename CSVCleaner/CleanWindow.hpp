@@ -14,7 +14,7 @@ namespace CSVCleaner
 
     public:
         CleanWindow(QMainWindow *window, std::unique_ptr<CleanWindow>& cleanWindowRef,
-                    const QList<QList<QString>> &allColumns) noexcept;
+                    const QList<QList<QString>> & allColumns, bool removeDupplicate) noexcept;
         ~CleanWindow() noexcept = default;
 
     private:
