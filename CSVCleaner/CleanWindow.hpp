@@ -3,26 +3,35 @@
 
 # include <QMainWindow>
 # include <QTableWidget>
-# include <QVBoxLayout>
+# include <QGridLayout>
+# include <QPushButton>
 # include <memory>
 
 namespace CSVCleaner
 {
+    class MainWindow;
+
     class CleanWindow : public QMainWindow
     {
         Q_OBJECT
 
     public:
-        CleanWindow(QMainWindow *window, std::unique_ptr<CleanWindow>& cleanWindowRef,
+        CleanWindow(MainWindow *window, std::unique_ptr<CleanWindow>& cleanWindowRef,
                     const QList<QList<QString>> & allColumns, bool removeDupplicate) noexcept;
         ~CleanWindow() noexcept = default;
 
     private:
+        MainWindow &_parent;
         void closeEvent(QCloseEvent *event) noexcept override;
         QWidget _mainWidget;
         QTableWidget _mainTable;
-        QVBoxLayout _mainLayout;
+        QGridLayout _mainLayout;
         std::unique_ptr<CleanWindow>& _cleanWindowRef;
+        QPushButton _export, _apply;
+        QString _name;
+
+    private slots:
+        void Apply() noexcept;
     };
 }
 

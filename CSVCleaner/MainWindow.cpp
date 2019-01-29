@@ -84,6 +84,7 @@ namespace CSVCleaner
         _defaultNewLineEdit.setText("\\n");
         _ignoreNewLine.setChecked(true);
         _ignoreNewLine.setEnabled(false);
+        _ignoreAccentsCheck.setEnabled(false);
 
         // Set connections
         connect(_refreshAction.get(), SIGNAL(triggered()), this, SLOT(RefreshProgram()));
@@ -100,6 +101,65 @@ namespace CSVCleaner
         connect(&_cleanAll, SIGNAL(clicked()), this, SLOT(CleanRawCsv()));
         connect(&_showDupplicateCheck, SIGNAL(clicked(bool)), this, SLOT(ShowDupplicateStateChanged(bool)));
         connect(&_defaultNewLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(NewLineTextChanged(const QString&)));
+    }
+
+    void MainWindow::ApplyTable(const QString &name, const std::map<QString, QString> &allItems) noexcept
+    {
+        const std::string &separator = UnescapeString(_defaultSeparatorEdit.text().toStdString());
+        const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
+        int i = 0;
+        size_t size, pos;
+        std::string token;
+        std::string firstLine = GetFirstLine();
+        while ((pos = FindSeparatorOrNewLine(firstLine, separator, newLine, size)) != std::string::npos) {
+            token = firstLine.substr(0, pos);
+            if (QString::fromStdString(token) == name)
+                break;
+            firstLine.erase(0, pos + size);
+            i++;
+        }
+        QString content = _csvText.toPlainText();
+        QString finalCsv = "";
+        bool isFirstLine = true;
+        bool isFirstSeparator;
+        QString qNewLine = QString::fromStdString(newLine);
+        QString qSeparator = QString::fromStdString(separator);
+        for (const QString &str : content.split(QString::fromStdString(newLine)))
+        {
+            if (isFirstLine)
+            {
+                isFirstLine = false;
+                finalCsv += str;
+                continue;
+            }
+            QString lineStr = "";
+            int y = 0;
+            isFirstSeparator = true;
+            for (QString str2 : str.split(QString::fromStdString(separator)))
+            {
+                if (_ignoreNewLine.isChecked() && str2[0] == '\n')
+                {
+                    str2 = str2.right(str2.length() - 1);
+                    lineStr += "\n";
+                }
+                if (!isFirstSeparator)
+                    lineStr += qSeparator;
+                if (y == i)
+                {
+                    auto it = allItems.find(str2);
+                    if (it != allItems.end())
+                        lineStr += it->second;
+                    else
+                        lineStr += str2;
+                }
+                else
+                    lineStr += str2;
+                isFirstSeparator = false;
+                y++;
+            }
+            finalCsv += qNewLine + lineStr;
+        }
+        _csvText.document()->setPlainText(finalCsv);
     }
 
     /// Refresh program (useful when user change config)
