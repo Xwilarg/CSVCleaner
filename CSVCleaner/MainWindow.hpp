@@ -24,7 +24,7 @@ namespace CSVCleaner
     public:
         MainWindow() noexcept;
         ~MainWindow() noexcept = default;
-        void ApplyTable(const QString &name, const std::map<QString, QString> &allItems) noexcept;
+        void ApplyTable(QList<QString> &&name, QList<std::map<QString, QString>> &&allItems) noexcept;
 
     private:
         QString CleanWord(QString &&str) const noexcept;

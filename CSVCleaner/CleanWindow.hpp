@@ -21,14 +21,16 @@ namespace CSVCleaner
         ~CleanWindow() noexcept = default;
 
     private:
+        bool IsQTableWidgetItemNullOrEmpty(QTableWidgetItem *item) const noexcept;
         MainWindow &_parent;
         void closeEvent(QCloseEvent *event) noexcept override;
         QWidget _mainWidget;
-        QTableWidget _mainTable;
+        QTabWidget _mainTab;
         QGridLayout _mainLayout;
         std::unique_ptr<CleanWindow>& _cleanWindowRef;
         QPushButton _export, _apply;
-        QString _name;
+        QList<QTableWidget*> _tables;
+        QList<QString> _allNames;
 
     private slots:
         void Apply() noexcept;

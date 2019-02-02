@@ -103,63 +103,70 @@ namespace CSVCleaner
         connect(&_defaultNewLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(NewLineTextChanged(const QString&)));
     }
 
-    void MainWindow::ApplyTable(const QString &name, const std::map<QString, QString> &allItems) noexcept
+    void MainWindow::ApplyTable(QList<QString> &&name, QList<std::map<QString, QString>> &&allItems) noexcept
     {
         const std::string &separator = UnescapeString(_defaultSeparatorEdit.text().toStdString());
         const std::string &newLine = UnescapeString(_defaultNewLineEdit.text().toStdString());
-        int i = 0;
+        int i;
         size_t size, pos;
         std::string token;
-        std::string firstLine = GetFirstLine();
-        while ((pos = FindSeparatorOrNewLine(firstLine, separator, newLine, size)) != std::string::npos) {
-            token = firstLine.substr(0, pos);
-            if (QString::fromStdString(token) == name)
-                break;
-            firstLine.erase(0, pos + size);
-            i++;
-        }
-        QString content = _csvText.toPlainText();
-        QString finalCsv = "";
-        bool isFirstLine = true;
-        bool isFirstSeparator;
-        QString qNewLine = QString::fromStdString(newLine);
-        QString qSeparator = QString::fromStdString(separator);
-        for (const QString &str : content.split(QString::fromStdString(newLine)))
+        QString finalContent = _csvText.toPlainText();
+        std::string finalFirstLine = GetFirstLine();
+        for (int z = 0; z != name.size(); z++)
         {
-            if (isFirstLine)
-            {
-                isFirstLine = false;
-                finalCsv += str;
-                continue;
+            i = 0;
+            std::string firstLine = finalFirstLine;
+            while ((pos = FindSeparatorOrNewLine(firstLine, separator, newLine, size)) != std::string::npos) {
+                token = firstLine.substr(0, pos);
+                if (QString::fromStdString(token) == name[z])
+                    break;
+                firstLine.erase(0, pos + size);
+                i++;
             }
-            QString lineStr = "";
-            int y = 0;
-            isFirstSeparator = true;
-            for (QString str2 : str.split(QString::fromStdString(separator)))
+            QString content = finalContent;
+            QString finalCsv = "";
+            bool isFirstLine = true;
+            bool isFirstSeparator;
+            QString qNewLine = QString::fromStdString(newLine);
+            QString qSeparator = QString::fromStdString(separator);
+            for (const QString &str : content.split(QString::fromStdString(newLine)))
             {
-                if (_ignoreNewLine.isChecked() && str2[0] == '\n')
+                if (isFirstLine)
                 {
-                    str2 = str2.right(str2.length() - 1);
-                    lineStr += "\n";
+                    isFirstLine = false;
+                    finalCsv += str;
+                    continue;
                 }
-                if (!isFirstSeparator)
-                    lineStr += qSeparator;
-                if (y == i)
+                QString lineStr = "";
+                int y = 0;
+                isFirstSeparator = true;
+                for (QString str2 : str.split(QString::fromStdString(separator)))
                 {
-                    auto it = allItems.find(str2);
-                    if (it != allItems.end())
-                        lineStr += it->second;
+                    if (_ignoreNewLine.isChecked() && str2[0] == '\n')
+                    {
+                        str2 = str2.right(str2.length() - 1);
+                        lineStr += "\n";
+                    }
+                    if (!isFirstSeparator)
+                        lineStr += qSeparator;
+                    if (y == i)
+                    {
+                        auto it = allItems[z].find(str2);
+                        if (it != allItems[z].end())
+                            lineStr += it->second;
+                        else
+                            lineStr += str2;
+                    }
                     else
                         lineStr += str2;
+                    isFirstSeparator = false;
+                    y++;
                 }
-                else
-                    lineStr += str2;
-                isFirstSeparator = false;
-                y++;
+                finalCsv += qNewLine + lineStr;
             }
-            finalCsv += qNewLine + lineStr;
+            finalContent = finalCsv;
         }
-        _csvText.document()->setPlainText(finalCsv);
+        _csvText.document()->setPlainText(finalContent);
     }
 
     /// Refresh program (useful when user change config)
