@@ -169,13 +169,15 @@ namespace CSVCleaner
             finalContent = finalCsv;
         }
         _csvText.document()->setPlainText(finalContent);
+        RefreshProgram();
     }
 
     /// Refresh program (useful when user change config)
     void MainWindow::RefreshProgram() noexcept
     {
         LoadDataInfo();
-        SetDataTable();
+        if (_previewTab.currentIndex() == 1)
+            SetDataTable();
     }
 
     /// "Clean Start" command
@@ -267,7 +269,7 @@ namespace CSVCleaner
             QTextCodec *codec = QTextCodec::codecForUtfText(arr, QTextCodec::codecForName("System"));
             _csvText.document()->setPlainText(QString(codec->toUnicode(arr)));
             file.close();
-            LoadDataInfo();
+            RefreshProgram();
             ResetElements();
         }
     }
