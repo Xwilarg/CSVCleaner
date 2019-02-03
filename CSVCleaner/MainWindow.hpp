@@ -58,7 +58,7 @@ namespace CSVCleaner
         QList<QString> _availableLineList;
         QList<std::pair<QString, int>> _selectedLineList;
         QPushButton _selectedAdd, _selectedReset;
-        QPushButton _selectedExport, _cleanStart;
+        QPushButton _selectedExport, _cleanStart, _cleanImport;
         QPushButton _cleanAll;
         QCheckBox _showDupplicateCheck;
         QCheckBox _ignoreCaseCheck, _ignoreAccentsCheck, _ignorePunctuationCheck;
@@ -69,6 +69,7 @@ namespace CSVCleaner
     private slots:
         void RefreshProgram() noexcept;
         void CleanColumns() noexcept;
+        void ImportClean() noexcept;
         void SaveFile() const noexcept;
         void SaveFileAs() noexcept;
         void OpenFile() noexcept;

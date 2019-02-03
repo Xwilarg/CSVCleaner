@@ -26,7 +26,7 @@ namespace CSVCleaner
           _columnSelection(&_modifBox), _selectedLineLabel(tr("Selected columns:\n"), &_modifBox),
           _availableLineList(), _selectedLineList(),
           _selectedAdd(tr("Add"), &_modifBox), _selectedReset(tr("Reset"), &_modifBox),
-          _selectedExport(tr("Export")), _cleanStart(tr("Start"), &_cleanBox),
+          _selectedExport(tr("Export")), _cleanStart(tr("Start"), &_cleanBox), _cleanImport(tr("Import model"), &_cleanBox),
           _cleanAll(tr("Clean all"), &_modifBox),
           _showDupplicateCheck(tr("Don't merge"), &_cleanBox),
           _ignoreCaseCheck(tr("Ignore case"), &_cleanBox), _ignoreAccentsCheck(tr("Ignore accents"), &_cleanBox),
@@ -68,9 +68,10 @@ namespace CSVCleaner
         _modifLayout.addWidget(&_selectedLineLabel);
         _modifLayout.addWidget(&_selectedExport, 4, 0, 1, 0);
         _modifLayout.addWidget(&_cleanBox, 5, 0, 1, 0);
-        _cleanLayout.addWidget(&_cleanStart);
-        _cleanLayout.addWidget(&_showDupplicateCheck);
-        _cleanLayout.addWidget(&_cleanOptionsBox);
+        _cleanLayout.addWidget(&_cleanStart, 0, 0);
+        _cleanLayout.addWidget(&_cleanImport, 0, 1);
+        _cleanLayout.addWidget(&_showDupplicateCheck, 1, 0, 1, 0);
+        _cleanLayout.addWidget(&_cleanOptionsBox, 2, 0, 1, 0);
         _cleanOptionsLayout.addWidget(&_ignoreCaseCheck);
         _cleanOptionsLayout.addWidget(&_ignoreAccentsCheck);
         _cleanOptionsLayout.addWidget(&_ignorePunctuationCheck);
@@ -98,6 +99,7 @@ namespace CSVCleaner
         connect(&_selectedReset, SIGNAL(clicked()), this, SLOT(ResetElements()));
         connect(&_selectedExport, SIGNAL(clicked()), this, SLOT(ExportElements()));
         connect(&_cleanStart, SIGNAL(clicked()), this, SLOT(CleanColumns()));
+        connect(&_cleanImport, SIGNAL(clicked()), this, SLOT(ImportClean()));
         connect(&_cleanAll, SIGNAL(clicked()), this, SLOT(CleanRawCsv()));
         connect(&_showDupplicateCheck, SIGNAL(clicked(bool)), this, SLOT(ShowDupplicateStateChanged(bool)));
         connect(&_defaultNewLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(NewLineTextChanged(const QString&)));
@@ -173,6 +175,7 @@ namespace CSVCleaner
     void MainWindow::RefreshProgram() noexcept
     {
         LoadDataInfo();
+        SetDataTable();
     }
 
     /// "Clean Start" command
@@ -225,6 +228,18 @@ namespace CSVCleaner
         }
     }
 
+    /// Clean command with a model
+    void MainWindow::ImportClean() noexcept
+    {
+        QString path(QFileDialog::getOpenFileName(this, tr("Open CSV model"), "", tr("CSV model (*.csvmodel)")));
+        if (path != "")
+        {
+            // We create a new window (see CleanWindow)
+            _cleanWindow = std::make_unique<CleanWindow>(this, _cleanWindow, std::move(path));
+            _cleanWindow->show();
+        }
+    }
+
     void MainWindow::SaveFile() const noexcept
     {
         SaveFileInternal();
@@ -248,11 +263,11 @@ namespace CSVCleaner
             _saveStr = path;
             QFile file(path);
             file.open(QIODevice::ReadOnly);
-            QByteArray arr = file.readAll();
+            QByteArray arr = file.readAll(); // TODO: Doesn't handle accentuation properly
             QTextCodec *codec = QTextCodec::codecForUtfText(arr, QTextCodec::codecForName("System"));
             _csvText.document()->setPlainText(QString(codec->toUnicode(arr)));
             file.close();
-            RefreshProgram();
+            LoadDataInfo();
             ResetElements();
         }
     }
