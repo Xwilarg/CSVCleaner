@@ -270,6 +270,7 @@ namespace CSVCleaner
             file.close();
             RefreshProgram();
             ResetElements();
+            setWindowTitle("CSVCleaner: " + path.split('/').last());
         }
     }
 
