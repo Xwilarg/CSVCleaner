@@ -37,7 +37,7 @@ namespace CSVCleaner
         std::string RemoveNewLine(std::string &&str, bool forceClean) const noexcept;
         std::string GetFirstLine() const noexcept;
         std::vector<std::string> GetAllLines(bool forceClean = false) const noexcept;
-        bool IsEmpty(const std::string &str) const noexcept;
+        bool IsEmpty(const QString &str) const noexcept;
         QWidget _mainWidget;
         QMenu *_fileMenu, *_helpMenu;
         QGroupBox _previewBox, _configBox, _modifBox, _cleanBox;

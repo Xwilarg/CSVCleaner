@@ -85,7 +85,6 @@ namespace CSVCleaner
         _defaultNewLineEdit.setText("\\n");
         _ignoreNewLine.setChecked(true);
         _ignoreNewLine.setEnabled(false);
-        _ignoreAccentsCheck.setEnabled(false);
 
         // Set connections
         connect(_refreshAction.get(), SIGNAL(triggered()), this, SLOT(RefreshProgram()));
@@ -211,8 +210,8 @@ namespace CSVCleaner
                         {
                             QString qToken = QString::fromStdString(token);
                             if (dontCheck ||
-                                    (!dontCheck && !IsEmpty(token) && !tmpList.contains(qToken)))
-                                tmpList.push_back(CleanWord(std::move(qToken)));
+                                    (!dontCheck && !IsEmpty(qToken) && !tmpList.contains(qToken)))
+                                tmpList.push_back(CleanWord(std::move(qToken))); // TODO: Don't clean headers
                             else
                                 tmpList.push_back(nullptr);
                             break;
@@ -265,8 +264,8 @@ namespace CSVCleaner
             _saveStr = path;
             QFile file(path);
             file.open(QIODevice::ReadOnly);
-            QByteArray arr = file.readAll(); // TODO: Doesn't handle accentuation properly
-            QTextCodec *codec = QTextCodec::codecForUtfText(arr, QTextCodec::codecForName("System"));
+            QByteArray arr = file.readAll();
+            QTextCodec *codec = QTextCodec::codecForName("UTF-8");
             _csvText.document()->setPlainText(QString(codec->toUnicode(arr)));
             file.close();
             RefreshProgram();
@@ -430,8 +429,22 @@ namespace CSVCleaner
                     ((c >= 33 && c <= 47) || (c >= 58 && c <= 64)
                      || (c >= 91 && c <= 96) || (c >= 123 && c <= 126)))
                 continue;
-            if (ignoreAccents) // TODO
+            if (ignoreAccents)
             {
+                if (c == 232 || c == 233 || c == 234 || c == 235)
+                    c = 'e';
+                else if (c == 224 || c == 226 || c == 228)
+                    c = 'a';
+                else if (c == 231)
+                    c = 'c';
+                else if (c == 241)
+                    c = 'n';
+                else if (c == 238 || c == 239)
+                    c = 'i';
+                else if (c == 244 || c == 246)
+                    c = 'o';
+                else if (c == 251 || c == 252)
+                    c = 'u';
             }
             ch = static_cast<QChar>(c);
             if (ignoreCase)
@@ -585,19 +598,19 @@ namespace CSVCleaner
         std::vector<std::string> allLines;
         while ((pos = content.find(newLine)) != std::string::npos) {
             token = content.substr(0, pos);
-            if (!forceClean || !IsEmpty(token))
+            if (!forceClean || !IsEmpty(QString::fromStdString(token)))
                 allLines.push_back(RemoveNewLine(std::move(token), forceClean));
             content.erase(0, pos + newLine.size());
         }
-        if (!IsEmpty(content) && content != newLine)
+        if (!IsEmpty(QString::fromStdString(content)) && content != newLine)
             allLines.push_back(content);
         return (allLines);
     }
 
-    bool MainWindow::IsEmpty(const std::string &str) const noexcept
+    bool MainWindow::IsEmpty(const QString &str) const noexcept
     {
-        for (const char &c : str) // TODO: Accentuated characters ?
-            if (c >= 21 && c != ' ')
+        for (const QChar &c : str) // TODO: Accentuated characters ?
+            if (c.isLetterOrNumber())
                 return (false);
         return (true);
     }

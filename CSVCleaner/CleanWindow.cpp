@@ -57,7 +57,7 @@ namespace CSVCleaner
         QFile file(modelFile);
         file.open(QIODevice::ReadOnly);
         QByteArray arr = file.readAll();
-        QTextCodec *codec = QTextCodec::codecForUtfText(arr, QTextCodec::codecForName("System"));
+        QTextCodec *codec = QTextCodec::codecForName("UTF-8");
         QString content = QString(codec->toUnicode(arr));
         for (const QString &s : content.split(_newLine))
         {
